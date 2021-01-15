@@ -1,58 +1,10 @@
-import 'dart:io';
-import 'dart:convert';
 import '../constants.dart';
+import '../socketUtil.dart';
 import 'package:flutter/material.dart';
-import 'package:edge_alert/edge_alert.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 String messageText;
-
-class SocketUtil{
-  Socket _socket;
-  bool socketInit = false;
-  static const String SERVER_IP = "10.0.0.2";
-  static const int SERVER_PORT = 8080;
-
-
-  Future<bool> sendMessage(String msg) async {
-    try{
-      _socket.add(utf8.encode(msg));
-    }catch (e){
-      print(e.toString());
-      return false;
-    }
-    return true;
-  }
-
-  Future<bool> initSocket(
-    Function connectionListner, Function messageListner) async {
-      try{
-        print('Connecting to socket...');
-        _socket = await Socket.connect(SERVER_IP, SERVER_PORT);
-        connectionListner(true);
-        _socket.listen((List<int> event) {
-          messageListner(utf8.decode(event));
-        });
-        socketInit = true;
-      } catch (e){
-        print(e.toString());
-        connectionListner(false);
-        return false;
-      }
-      print('Connected!!');
-      return true;
-    }
-
-    void closeSocket(){
-      _socket.close();
-      _socket = null;
-    }
-
-    void cleanUp() {
-      if (_socket != null)
-        _socket.destroy();
-    }
-}
+String username;
+SocketUtil socketUtil = SocketUtil();
 
 class ChatterScreen extends StatefulWidget {
   @override
@@ -61,17 +13,14 @@ class ChatterScreen extends StatefulWidget {
 
 class Args{
   final String username;
-
   Args(this.username);
 }
 
 class _ChatterScreenState extends State<ChatterScreen> with
 WidgetsBindingObserver{
   final chatMsgTextController = TextEditingController();
-  WebSocketChannel channel;
 
   String _status;
-  SocketUtil _socketUtil;
 
   List<String> _messages;
   int userSelected = 1;
@@ -85,7 +34,7 @@ WidgetsBindingObserver{
 
   void connectionListner(bool connected){
     setState(() {
-      _status = 'Status: ' + (connected ? 'Connected' : 'Failed to Connect to server!');
+      _status = (connected ? 'Connected' : 'Failed to Connect to server!');
     });
   }
 
@@ -94,19 +43,19 @@ WidgetsBindingObserver{
     super.initState();
     _status = "";
     _messages = List<String>();
-    _socketUtil = SocketUtil();
-    _socketUtil.initSocket(connectionListner, messageListner);
+    socketUtil.addMessageListner(messageListner,connectionListner);
   }
 
   @override
   void dispose(){
-    channel.sink.close();
+    print('Disconnected!!');
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final Args args = ModalRoute.of(context).settings.arguments;
+    username = args.username;
 
     return Scaffold(
       appBar: AppBar(
@@ -156,7 +105,7 @@ WidgetsBindingObserver{
               decoration: BoxDecoration(
                 color: Colors.pinkAccent,
               ),
-              accountName: Text('Hello ${args.username}'),
+              accountName: Text('Hello' + username),
               accountEmail: Text('Sample@email.com'),
               currentAccountPicture: CircleAvatar(
                 child: Icon(Icons.supervised_user_circle,size: 72,color: Colors.white,),
@@ -168,6 +117,8 @@ WidgetsBindingObserver{
               title: Text("Logout"),
               subtitle: Text("Exit this room"),
               onTap: () async {
+                socketUtil.closeSocket();
+                socketUtil.cleanUp();
                 Navigator.pushReplacementNamed(context, '/');
               },
             ),
@@ -183,10 +134,16 @@ WidgetsBindingObserver{
               reverse: false,
               itemCount: null == _messages ? 0 : _messages.length,
               itemBuilder: (BuildContext ctx, int index){
+                List<String> _msg = _messages[index].split(":");
+
+                String _sender = _msg[0].trim();
+                String _msgText = _msg[1];
+                bool _user = (_sender==username) ? true : false;
+
                 return MessageBubble(
-                  msgSender: args.username,
-                  msgText: _messages[index],
-                  user: true
+                  msgSender: _sender,
+                  msgText: _msgText,
+                  user: _user
                 );
               },
             )
@@ -220,16 +177,16 @@ WidgetsBindingObserver{
                   onPressed: () {
                     if(chatMsgTextController.text.isEmpty)
                       return;
-                    _socketUtil.sendMessage(chatMsgTextController.text).then(
+                    socketUtil.sendMessage(chatMsgTextController.text).then(
                       (bool sent){
                         if(sent)
-                          chatMsgTextController.clear();
+                          setState(() {
+                            String _msg = username+":"+chatMsgTextController.text;
+                            _messages.add(_msg);
+                            chatMsgTextController.clear();
+                        });
                       }
                     );
-                    /* setState(() {
-                      _messages.add(chatMsgTextController.text);
-                      chatMsgTextController.clear();
-                    }); */
                   },
                   child:Padding(
                     padding: const EdgeInsets.all(10.0),

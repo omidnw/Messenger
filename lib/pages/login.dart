@@ -1,9 +1,9 @@
-import 'package:chat_app/widgets/custombutton.dart';
-import 'package:chat_app/widgets/customtextinput.dart';
+import './chatterScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:edge_alert/edge_alert.dart';
+import 'package:chat_app/widgets/custombutton.dart';
+import 'package:chat_app/widgets/customtextinput.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
-import './chatterScreen.dart';
 
 class ChatterLogin extends StatefulWidget {
   @override
@@ -13,6 +13,7 @@ class ChatterLogin extends StatefulWidget {
 class _ChatterLoginState extends State<ChatterLogin> {
   String username;
   bool loggingin = false;
+
   @override
   Widget build(BuildContext context) {
     return ModalProgressHUD(
@@ -80,11 +81,25 @@ class _ChatterLoginState extends State<ChatterLogin> {
                             icon: Icons.error,
                             backgroundColor: Colors.pink[400]
                           );
-                        else
-                          Navigator.pushReplacementNamed(
-                            context,
-                            '/chat',
-                            arguments: Args(username.trim()));
+                        else{
+                            socketUtil.initSocket(username).then((bool logged){
+                            if(!logged)
+                              EdgeAlert.show(
+                                context,
+                                title: 'Uh-oh',
+                                description: 'Failed to connect to server!',
+                                gravity: EdgeAlert.BOTTOM,
+                                icon: Icons.error,
+                                backgroundColor: Colors.pink[400]
+                              );
+                            else
+                              Navigator.pushReplacementNamed(
+                                context,
+                                '/chat',
+                                arguments: Args(username)
+                                );
+                          });
+                        }
                       },
                     ),
                   ),
@@ -93,7 +108,7 @@ class _ChatterLoginState extends State<ChatterLogin> {
                   ),
                   Hero(
                     tag: 'footer',
-                    child: Text('Front-end by Aria Khoshnood\nInspired by ishandeveloper design',
+                    child: Text('Back-end by Omid Reza Keshtkar\nFront-end by Aria Khoshnood',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontFamily: 'Poppins', color: Colors.pink[200]),
                     ),

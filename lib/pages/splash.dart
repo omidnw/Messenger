@@ -88,7 +88,7 @@ class _ChatterHomeState extends State<ChatterHome>
                 SizedBox(
                   height: MediaQuery.of(context).size.height * 0.1,
                 ),
-               Text('Front-end by Aria Khoshnood\nInspired by ishandeveloper design',
+               Text('Back-end by Omid Reza Keshtkar\nWith C\nFront-end by Aria Khoshnood\nInspired by ishandeveloper design',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontFamily: 'Poppins', color: Colors.pink[200]),)
               ],
