@@ -1,4 +1,5 @@
 // include Library : 
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -24,6 +25,8 @@
 // Global Variebles : 
 static _Atomic unsigned int client_count = 0;
 static int uid = 10;
+Sqlite3_MGT Messengerdb;
+time_t t;
 // Finish.
 
 // Structures : 
@@ -152,6 +155,11 @@ void* handle_client(void* arg) {
 				send_message(buff_out, cli->uid);
 
 				str_trim_lf(buff_out, strlen(buff_out));
+				strcpy(Messengerdb.tablename, "Clients");
+				strcpy(Messengerdb.columnname, "Name, lastmessage, messagetime");
+				sprintf(Messengerdb.value, "'%s', '%s', '%s'", cli->name, buff_out, ctime(&t));
+				strcpy(Messengerdb.condition, "4");
+				sqlite3mgt(Messengerdb);
 				printf("%s -> %s\n", buff_out, cli->name);
 			}
 		}
@@ -182,9 +190,9 @@ void* handle_client(void* arg) {
 int main()// (int argc, char** argv)
 {
 	// Variebles : 
-	FILE *fp;
+	FILE* fp;
 	char buff[255], * array[3];
-	if(folder_exists("config"))
+	if (folder_exists("config"))
 	{
 		fp = fopen("config/settings.txt", "r");
 		readfile(buff, sizeof(buff), fp);
@@ -202,13 +210,8 @@ int main()// (int argc, char** argv)
 	}
 	printf("Your DataBase And Settings File Created Your Settings Is :\nYour Ip : %s\nYour Port : %s", array[0], array[1]);
 	printf("\nYour DataBase Name : %s\n", array[2]);
-	Sqlite3_MGT Messengerdb = Sqlite3_Default;
 	strcpy(Messengerdb.databasename, array[2]);
-	strcpy(Messengerdb.columnname, "Name, lastmessage, messagetime");
-	strcpy(Messengerdb.value, "'test', 'test', 'test'");
-	sqlite3mgt(Messengerdb);
-	strcpy(Messengerdb.tablename, "Clients");
-	strcpy(Messengerdb.condition, "4");
+	strcpy(Messengerdb.condition, "1");
 	sqlite3mgt(Messengerdb);
 	printf("\ntest finished please check database.\n");
 	struct sockaddr_in server_address, client_address;
@@ -254,7 +257,7 @@ int main()// (int argc, char** argv)
 		connfd = accept(listenfd, (struct sockaddr*)&client_address, &clientlen);
 
 		// Check if max clients is reached : 
-		if((client_count + 1) == MAX_CLIENTS)
+		if ((client_count + 1) == MAX_CLIENTS)
 		{
 			printf("Maximum Clients Connected. Please Wait Connection Rejected : ");
 			print_ip_address(client_address);
