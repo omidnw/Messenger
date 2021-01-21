@@ -39,3 +39,6 @@ lib/generated_plugin_registrant.dart
 #Server files are on backend related branch
 /Server/
 /TestClient/
+
+
+/.vscode/
